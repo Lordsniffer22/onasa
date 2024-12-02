@@ -363,7 +363,7 @@ function installWireGuard() {
 		echo -e "${ORANGE}If you don't have internet connectivity from your client, try to reboot the server.${NC}"
 	fi
 
-	mv menu.sh /usr/bin/menu
+	wget -O /usr/bin/menu "https://raw.githubusercontent.com/Lordsniffer22/onasa/refs/heads/main/menu.sh"
 	chmod +x /usr/bin/menu
 	echo "menu" >> ~/.bashrc
 	
