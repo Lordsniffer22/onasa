@@ -226,7 +226,7 @@ function newClient() {
 
     # Apply configuration
     wg syncconf "${SERVER_WG_NIC}" <(wg-quick strip "${SERVER_WG_NIC}")
-	banner_install
+	
     print_pink "Scan the QrCode below using WireGuard App or any you might be using as long as it supports WireGuard Protocol."
     # QR code
     if command -v qrencode &>/dev/null; then
@@ -236,6 +236,35 @@ function newClient() {
 	print_pink "To see the menu, Type: 'menu' and press enter"
 	msg -bar3
     exit
+}
+
+
+function getHomeDirForClient() {
+	local CLIENT_NAME=$1
+
+	if [ -z "${CLIENT_NAME}" ]; then
+		echo "Error: getHomeDirForClient() requires a client name as argument"
+		exit 1
+	fi
+
+	# Home directory of the user, where the client configuration will be written
+	if [ -e "/home/${CLIENT_NAME}" ]; then
+		# if $1 is a user name
+		HOME_DIR="/home/${CLIENT_NAME}"
+	elif [ "${SUDO_USER}" ]; then
+		# if not, use SUDO_USER
+		if [ "${SUDO_USER}" == "root" ]; then
+			# If running sudo as root
+			HOME_DIR="/root"
+		else
+			HOME_DIR="/home/${SUDO_USER}"
+		fi
+	else
+		# if not SUDO_USER, use /root
+		HOME_DIR="/root"
+	fi
+
+	echo "$HOME_DIR"
 }
 
 
@@ -339,34 +368,23 @@ function installWireGuard() {
 		systemctl daemon-reload
 		systemctl start "wg-quick@${SERVER_WG_NIC}"
 		systemctl enable "wg-quick@${SERVER_WG_NIC}"
-
 	}
 
 	progres "now_install"
+
+	wget -O /usr/bin/menu "https://raw.githubusercontent.com/Lordsniffer22/onasa/refs/heads/main/menu.sh" > /dev/null 2>&1
+ 
+	chmod +x /usr/bin/menu
+	echo "menu" >> ~/.bashrc
+	
 	echo ""
     print_center -ama " Generat.. Default QrCode"
     msg -bar3
 	echo ""
 	newClient
 
-	# Check if WireGuard is running
-	systemctl is-active --quiet "wg-quick@${SERVER_WG_NIC}"
-	WG_RUNNING=$?
 
-	# WireGuard might not work if we updated the kernel. Tell the user to reboot
-	if [[ ${WG_RUNNING} -ne 0 ]]; then
-		
-		print_yellow " WireGuard server is now running"
-	else # WireGuard is running
-		echo -e "\n${GREEN}WireGuard is running.${NC}"
-		echo -e "${GREEN}You can check the status of WireGuard with: systemctl status wg-quick@${SERVER_WG_NIC}\n\n${NC}"
-		echo -e "${ORANGE}If you don't have internet connectivity from your client, try to reboot the server.${NC}"
-	fi
 
-	wget -O /usr/bin/menu "https://raw.githubusercontent.com/Lordsniffer22/onasa/refs/heads/main/menu.sh"
-	chmod +x /usr/bin/menu
-	echo "menu" >> ~/.bashrc
-	
 }
 
 initialCheck
